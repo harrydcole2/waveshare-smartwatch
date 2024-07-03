@@ -71,6 +71,76 @@ void setup() {
       LCD_1IN28_Display(BlackImage);
       DEV_Delay_ms(1000);
     #endif
+
+    #if 1
+      float acc[3], gyro[3];
+      unsigned int time_count = 0;
+      uint16_t result;
+
+      QMI8658_init();
+      Serial.println("QMI8658_init\r\n");
+      // DEV_SET_PWM(100);
+      const float conversion_factor = 3.3f / (1 << 12) * 3;
+      Paint_Clear(WHITE);
+      Paint_DrawRectangle(0, 00, 240, 47, 0XF410, DOT_PIXEL_2X2, DRAW_FILL_FULL);
+      Paint_DrawRectangle(0, 47, 240, 120, 0X4F30, DOT_PIXEL_2X2, DRAW_FILL_FULL);
+      Paint_DrawRectangle(0, 120, 240, 195, 0XAD55, DOT_PIXEL_2X2, DRAW_FILL_FULL);
+      Paint_DrawRectangle(0, 195, 240, 240, 0X2595, DOT_PIXEL_2X2, DRAW_FILL_FULL);
+
+      Paint_DrawString_EN(45, 30, "LongPress Quit", &Font16, WHITE, BLACK);
+      Paint_DrawString_EN(45, 50, "ACC_X = ", &Font16, WHITE, BLACK);
+      Paint_DrawString_EN(45, 75, "ACC_Y = ", &Font16, WHITE, BLACK);
+      Paint_DrawString_EN(45, 100, "ACC_Z = ", &Font16, WHITE, BLACK);
+      Paint_DrawString_EN(45, 125, "GYR_X = ", &Font16, WHITE, BLACK);
+      Paint_DrawString_EN(45, 150, "GYR_Y = ", &Font16, WHITE, BLACK);
+      Paint_DrawString_EN(45, 175, " GYR_Z = ", &Font16, WHITE, BLACK);
+      Paint_DrawString_EN(45, 200, "BAT(V) = ", &Font16, WHITE, BLACK);
+      LCD_1IN28_Display(BlackImage);
+
+      while(true) {
+        result = DEC_ADC_Read();
+        QMI8658_read_xyz(acc, gyro, &time_count);
+
+        Paint_Clear(WHITE);
+        Paint_DrawRectangle(120, 47, 220, 120, 0X4F30, DOT_PIXEL_2X2, DRAW_FILL_FULL);
+        Paint_DrawRectangle(120, 120, 220, 195, 0XAD55, DOT_PIXEL_2X2, DRAW_FILL_FULL);
+        Paint_DrawRectangle(120, 195, 220, 240, 0X2595, DOT_PIXEL_2X2, DRAW_FILL_FULL);
+
+        Paint_DrawNum(120, 50, acc[0], &Font16, 2, BLACK, WHITE);
+        Paint_DrawNum(120, 75, acc[1], &Font16, 2, BLACK, WHITE);
+        Paint_DrawNum(120, 100, acc[2], &Font16, 2, BLACK, WHITE);
+        Paint_DrawNum(120, 125, gyro[0], &Font16, 2, BLACK, WHITE);
+        Paint_DrawNum(120, 150, gyro[1], &Font16, 2, BLACK, WHITE);
+        Paint_DrawNum(120, 175, gyro[2], &Font16, 2, BLACK, WHITE);
+        Paint_DrawNum(130, 200, result * conversion_factor, &Font16, 2, BLACK, WHITE);
+
+        LCD_1IN28_DisplayWindows(120, 50, 210, 200, BlackImage);
+        LCD_1IN28_DisplayWindows(130, 200, 220, 220, BlackImage);
+
+        if (touch.available()) {
+          if (touch.data.y<45) {
+            break;
+          }
+        }
+      }
+
+    #endif
+
+    delay(2000)
+
+    #if 1
+      Paint_Clear(WHITE);
+      Paint_DrawRectangle(0, 00, 240, 47, 0X2595, DOT_PIXEL_2X2, DRAW_FILL_FULL);
+      Paint_DrawString_EN(60, 30, "Touch test", &Font16, WHITE, BLACK);
+
+      LCD_1IN28_Display(BlackImage);
+      while(true) {
+        if (touch.available()) {
+          Paint_DrawPoint(touch.data.x, touch.data.y, BLACK, DOT_PIXEL_3X3, DOT_FILL_RIGHTUP);
+          LCD_1IN28_DisplayWindows(touch.data.x, touch.data.y, touch.data.x + 3, touch.data.y + 3, BlackImage);
+        }
+      }
+    #endif
   }
 
 }
