@@ -1,7 +1,17 @@
 #include <TFT_eSPI.h>
 #include <SPI.h>
+#include <WiFi.h>
+#include "time.h"
 
-// Set up the display
+// Replace with your network credentials
+const char* ssid = "Unit18";
+const char* password = "Vegas18!";
+
+// NTP server settings
+const char* ntpServer = "pool.ntp.org";
+const long gmtOffset_sec = -25200; // Adjust for your timezone (e.g., -18000 for EST)
+const int daylightOffset_sec = 3600; // Adjust for daylight savings if applicable
+
 TFT_eSPI tft = TFT_eSPI();
 
 // Constants for watch face
@@ -11,8 +21,17 @@ TFT_eSPI tft = TFT_eSPI();
 
 void setup() {
   tft.init();
-  tft.setRotation(1);  // Set orientation as needed
+  tft.setRotation(3);
   tft.fillScreen(TFT_BLACK);
+  
+  // Connect to Wi-Fi
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connecting to WiFi...");
+  }
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+
   drawWatchFace();
 }
 
@@ -22,10 +41,8 @@ void loop() {
 }
 
 void drawWatchFace() {
-  // Draw outer circle
   tft.drawCircle(CENTER_X, CENTER_Y, RADIUS, TFT_WHITE);
 
-  // Draw hour marks
   for (int i = 0; i < 12; i++) {
     float angle = i * 30 * DEG_TO_RAD;
     int x0 = CENTER_X + (RADIUS - 10) * cos(angle);
@@ -37,30 +54,33 @@ void drawWatchFace() {
 }
 
 void drawTime() {
-  // Get the current time (replace with RTC logic if using an RTC module)
-  int hours = (millis() / 3600000) % 12;
-  int minutes = (millis() / 60000) % 60;
-  int seconds = (millis() / 1000) % 60;
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo)) {
+    tft.setCursor(0, 0);
+    tft.setTextColor(TFT_RED, TFT_BLACK);
+    tft.setTextSize(2);
+    tft.println("Time not set");
+    return;
+  }
 
-  // Clear previous hands
-  tft.fillCircle(CENTER_X, CENTER_Y, RADIUS - 20, TFT_BLACK);
+  int hours = timeinfo.tm_hour % 12;
+  int minutes = timeinfo.tm_min;
+  int seconds = timeinfo.tm_sec;
 
-  // Calculate angles for each hand
+  tft.fillCircle(CENTER_X, CENTER_Y, RADIUS - 19, TFT_BLACK);
+
   float secAngle = seconds * 6 * DEG_TO_RAD;
   float minAngle = minutes * 6 * DEG_TO_RAD + seconds * 0.1 * DEG_TO_RAD;
   float hourAngle = hours * 30 * DEG_TO_RAD + minutes * 0.5 * DEG_TO_RAD;
 
-  // Draw hour hand
   int hx = CENTER_X + (RADIUS - 50) * cos(hourAngle);
   int hy = CENTER_Y + (RADIUS - 50) * sin(hourAngle);
   tft.drawLine(CENTER_X, CENTER_Y, hx, hy, TFT_RED);
 
-  // Draw minute hand
   int mx = CENTER_X + (RADIUS - 30) * cos(minAngle);
   int my = CENTER_Y + (RADIUS - 30) * sin(minAngle);
   tft.drawLine(CENTER_X, CENTER_Y, mx, my, TFT_GREEN);
 
-  // Draw second hand
   int sx = CENTER_X + (RADIUS - 20) * cos(secAngle);
   int sy = CENTER_Y + (RADIUS - 20) * sin(secAngle);
   tft.drawLine(CENTER_X, CENTER_Y, sx, sy, TFT_BLUE);
